@@ -1,70 +1,188 @@
-# Getting Started with Create React App
+## Debounce in React
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+##### Debounce in Vanilla Javascript
 
-## Available Scripts
+[Debounce in Vanilla Javascript](https://youtu.be/tYx6pXdvt1s)
 
-In the project directory, you can run:
+##### useMemo
 
-### `npm start`
+[useMemo Hook](https://youtu.be/R49sY--qOqA)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+#### Initial Setup
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+```js
+import React, { useState } from 'react';
+import { useGlobalContext } from '../context';
+export default function SearchForm() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const { fetchDrinks } = useGlobalContext();
 
-### `npm test`
+  const handleSubmit = (e) => {
+    e.preventDefault();
+  };
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+  const searchCocktail = (e) => {
+    const searchTerm = e.target.value;
+    setSearchTerm(searchTerm);
+    fetchDrinks(searchTerm);
+  };
 
-### `npm run build`
+  return (
+    <section className="section search">
+      <form className="search-form" onSubmit={handleSubmit}>
+        <div className="form-control">
+          <label htmlFor="name">search your favorite cocktail</label>
+          <input
+            type="text"
+            name="name"
+            id="name"
+            onChange={searchCocktail}
+            value={searchTerm}
+          />
+        </div>
+      </form>
+    </section>
+  );
+}
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+#### Without Debounce
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```js
+import React, { useState } from 'react';
+import { useGlobalContext } from '../context';
+export default function SearchForm() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const { fetchDrinks } = useGlobalContext();
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+  const handleSubmit = (e) => {
+    e.preventDefault();
+  };
 
-### `npm run eject`
+  const searchCocktail = () => {
+    let timeoutId;
+    return (e) => {
+      const searchTerm = e.target.value;
+      setSearchTerm(searchTerm);
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        fetchDrinks(searchTerm);
+      }, 1000);
+    };
+  };
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+  return (
+    <section className="section search">
+      <form className="search-form" onSubmit={handleSubmit}>
+        <div className="form-control">
+          <label htmlFor="name">search your favorite cocktail</label>
+          <input
+            type="text"
+            name="name"
+            id="name"
+            onChange={searchCocktail()}
+            value={searchTerm}
+          />
+        </div>
+      </form>
+    </section>
+  );
+}
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+#### Debounce With useMemo
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```js
+import React, { useMemo, useState } from 'react';
+import { useGlobalContext } from '../context';
+export default function SearchForm() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const { fetchDrinks } = useGlobalContext();
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+  const handleSubmit = (e) => {
+    e.preventDefault();
+  };
 
-## Learn More
+  const searchCocktail = () => {
+    let timeoutId;
+    return (e) => {
+      const searchTerm = e.target.value;
+      setSearchTerm(searchTerm);
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        fetchDrinks(searchTerm);
+      }, 1000);
+    };
+  };
+  const debounceSearchCocktail = useMemo(() => searchCocktail(), []);
+  return (
+    <section className="section search">
+      <form className="search-form" onSubmit={handleSubmit}>
+        <div className="form-control">
+          <label htmlFor="name">search your favorite cocktail</label>
+          <input
+            type="text"
+            name="name"
+            id="name"
+            onChange={debounceSearchCocktail}
+            value={searchTerm}
+          />
+        </div>
+      </form>
+    </section>
+  );
+}
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+#### Debounce with useEffect
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```js
+import React, { useEffect, useMemo, useState } from 'react';
+import { useGlobalContext } from '../context';
+export default function SearchForm() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [timeoutId, setTimeoutId] = useState(null);
 
-### Code Splitting
+  const { fetchDrinks } = useGlobalContext();
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+  const handleSubmit = (e) => {
+    e.preventDefault();
+  };
 
-### Analyzing the Bundle Size
+  const searchCocktail = (e) => {
+    const searchTerm = e.target.value;
+    setSearchTerm(searchTerm);
+    clearTimeout(timeoutId);
+    setTimeoutId(
+      setTimeout(() => {
+        // Call the API after the debounce timeout
+        fetchDrinks(searchTerm);
+      }, 1000)
+    );
+  };
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+  useEffect(() => {
+    // Cleanup function to clear the timeout on unmount and re-render
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [timeoutId]);
 
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+  return (
+    <section className="section search">
+      <form className="search-form" onSubmit={handleSubmit}>
+        <div className="form-control">
+          <label htmlFor="name">search your favorite cocktail</label>
+          <input
+            type="text"
+            name="name"
+            id="name"
+            onChange={searchCocktail}
+            value={searchTerm}
+          />
+        </div>
+      </form>
+    </section>
+  );
+}
+```
